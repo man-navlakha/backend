@@ -1,56 +1,56 @@
 # --- General ---
-# Environment variables
+# Environment variables - Contains sensitive data like API keys and database passwords
 .env
 .env.*
 !.env.example
 
-# IDE and editor folders
+# IDE and editor folders - User-specific settings for development environments
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# OS-generated files
+# OS-generated files - System files that don't belong in the project
 .DS_Store
 Thumbs.db
 
 # --- Python / Django ---
-# Virtual environment
+# Virtual environment - Contains all the project's Python dependencies
 venv/
 env/
 .venv/
 
-# Byte-compiled files
+# Byte-compiled files - Automatically generated Python files
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 
-# Django-specific
+# Django-specific - Files and folders related to Django's operation
 db.sqlite3
 /media/
 /static/
+/staticfiles/
 
 # --- Node.js / React (Vite) ---
-# Dependencies
+# Dependencies - All the project's JavaScript dependencies
 /node_modules/
 
-# Build output
+# Build output - The compiled and optimized version of the frontend
 /dist/
 
-# Logs
+# Logs - Automatically generated log files
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Vite-specific cache
+# Vite-specific cache - Temporary files used by the Vite development server
 .vite/
 
-# Testing
+# Testing - Test coverage reports
 /coverage/
 
 # --- Vercel ---
-# Vercel deployment folder
+# Vercel deployment folder - Contains files related to Vercel deployments
 .vercel/
-
