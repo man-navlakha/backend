@@ -1,0 +1,52 @@
+# --- General ---
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE and editor folders
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# --- Python / Django ---
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Byte-compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Django-specific
+db.sqlite3
+/media/
+/static/
+
+# --- Node.js / React (Vite) ---
+# Dependencies
+/node_modules/
+
+# Build output
+/dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Vite-specific cache
+.vite/
+
+# Testing
+/coverage/
+
