@@ -31,7 +31,7 @@ SECRET_KEY = 'django-insecure-k9#pt!mbd^%%81h1=kx8v0oby#$^5@tsj00+n#nr&4d%16atdr
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['backend-3j4r.onrender.com', 'localhost', '127.0.0.1','localhost:5173', '0.0.0.0:5173', 'https://man-navlakha.netlify.app', ]
 
 
 # Application definition
