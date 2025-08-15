@@ -50,3 +50,7 @@ pnpm-debug.log*
 # Testing
 /coverage/
 
+# --- Vercel ---
+# Vercel deployment folder
+.vercel/
+
