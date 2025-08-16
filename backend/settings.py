@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_yasg',
     'chatbot',
+    'corsheaders', # corsheaders should be listed here
 ]
 
 MIDDLEWARE = [
@@ -68,6 +69,11 @@ CORS_ALLOWED_ORIGINS = [
     "https://172.20.10.4:5173",
     "http://localhost:5173", # Keep for local development
 ]
+
+CORS_ALLOW_ALL_ORIGINS = False
+
+
+
 ROOT_URLCONF = 'backend.urls'
 
 TEMPLATES = [
