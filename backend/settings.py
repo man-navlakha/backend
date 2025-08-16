@@ -15,7 +15,8 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-
+SECRET_KEY = os.getenv("SECRET_KEY")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 # Now set the OPENAI_API_KEY
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -44,10 +45,16 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
     'drf_yasg',
     'chatbot',
 ]
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -65,7 +72,14 @@ MIDDLEWARE = ['corsheaders.middleware.CorsMiddleware'] + MIDDLEWARE
 
 CORS_ALLOW_ALL_ORIGINS = True  # Use CORS_ALLOWED_ORIGINS in production
 
+# Change this:
+CORS_ALLOW_ALL_ORIGINS = True
 
+# To this (replace with your actual frontend URL):
+CORS_ALLOWED_ORIGINS = [
+    "https://man-navlakha.netlify.app",
+    "http://localhost:5173", # Keep for local development
+]
 ROOT_URLCONF = 'backend.urls'
 
 TEMPLATES = [

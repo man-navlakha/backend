@@ -12,6 +12,8 @@ import traceback # Import for better error logging
 
 from .models import HiringRequest
 from .serializers import HiringRequestSerializer
+from rest_framework.permissions import IsAuthenticated # Import this
+from rest_framework.decorators import api_view, permission_classes # Import permission_classes
 
 # Load environment variables from .env file
 load_dotenv()
@@ -177,8 +179,11 @@ def stream_gemini_response(history):
         # Send a fallback response on error
         yield f"I'm sorry, an error occurred.|||SUGGESTIONS|||[]"
 
+
 @api_view(['POST'])
+@permission_classes([IsAuthenticated]) # Add this decorator
 def chatbot_reply(request):
+    
     if not model:
         return Response({"error": "Model not initialized."}, status=500)
 
@@ -199,7 +204,9 @@ def chatbot_reply(request):
 
 
 # --- VIEW FOR HIRING REQUESTS (No changes needed here) ---
+
 @api_view(['POST'])
+@permission_classes([IsAuthenticated]) # Add this decorator
 def submit_hiring_request(request):
     serializer = HiringRequestSerializer(data=request.data)
     if serializer.is_valid():
