@@ -44,7 +44,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'sslserver',
     'drf_yasg',
     'chatbot',
     'corsheaders', # corsheaders should be listed here
@@ -80,7 +79,9 @@ CSRF_TRUSTED_ORIGINS = [
     "https://man-navlakha.netlify.app",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "http://172.20.10.4:5173",   # your mobile dev host
+    "http://172.20.10.4:5173",
+    
+    # your mobile dev host
 ]
 
 
