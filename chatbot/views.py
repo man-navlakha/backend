@@ -212,33 +212,29 @@ def submit_hiring_request(request):
 def synthesize_speech(request):
     if not tts_model:
         return Response({"error": "TTS Model not initialized."}, status=500)
-    
+
     text_to_speak = request.data.get('text', '')
     if not text_to_speak:
         return Response({"error": "No text provided"}, status=400)
 
     try:
-        # Generate audio content using the Gemini TTS model
+        # Generate audio content using Gemini TTS model
         response = tts_model.generate_content(
-            f"Say in a clear, friendly voice: {text_to_speak}",
-            generation_config=genai.types.GenerationConfig(
-                response_modalities=["AUDIO"],
-                speech_config=genai.types.SpeechConfig(
-                    voice_config=genai.types.VoiceConfig(
-                        prebuilt_voice_config=genai.types.PrebuiltVoiceConfig(
-                            voice_name="Puck" # A friendly, upbeat voice
-                        )
-                    )
-                )
+            f"Say this in a clear, friendly voice: {text_to_speak}",
+            generation_config=genai.GenerationConfig(
+                response_modalities=["AUDIO"]
             )
         )
-        
-        # The API returns the audio data directly in the response
+
+        # Extract audio part (base64-encoded)
         audio_part = response.candidates[0].content.parts[0]
-        audio_data = audio_part.inline_data.data
-        mime_type = audio_part.inline_data.mime_type
-        
-        return JsonResponse({'audioContent': audio_data, 'mimeType': mime_type})
+        if hasattr(audio_part, "inline_data"):
+            audio_data = audio_part.inline_data.data
+            mime_type = audio_part.inline_data.mime_type
+        else:
+            return Response({"error": "No audio data returned"}, status=500)
+
+        return JsonResponse({"audioContent": audio_data, "mimeType": mime_type})
 
     except Exception as e:
         print(f"Error during TTS synthesis: {traceback.format_exc()}")
