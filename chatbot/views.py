@@ -3,17 +3,15 @@
 import os
 import json
 import google.generativeai as genai
-from django.http import StreamingHttpResponse
+from django.http import StreamingHttpResponse, JsonResponse
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from dotenv import load_dotenv
-import traceback # Import for better error logging
+import traceback
 
 from .models import HiringRequest
 from .serializers import HiringRequestSerializer
-from rest_framework.permissions import IsAuthenticated # Import this
-from rest_framework.decorators import api_view, permission_classes # Import permission_classes
 
 # Load environment variables from .env file
 load_dotenv()
@@ -159,57 +157,81 @@ try:
         model_name='gemini-1.5-flash',
         system_instruction=PROFILE_PROMPT
     )
+    # Configure the TTS model
+    tts_model = genai.GenerativeModel(model_name='gemini-2.5-flash-preview-tts')
 except Exception as e:
     print(f"API Key not configured or model initialization failed: {e}")
     model = None
+    tts_model = None
 
-# --- NEW GENERATOR FUNCTION FOR STREAMING ---
+# --- STREAMING FUNCTION (No changes needed here) ---
 def stream_gemini_response(history):
-    """
-    A generator function that yields chunks of the AI's response.
-    """
     try:
-        # Enable streaming in the API call
         response_stream = model.generate_content(history, stream=True)
         for chunk in response_stream:
             if chunk.text:
                 yield chunk.text
     except Exception as e:
         print(f"Error during streaming: {traceback.format_exc()}")
-        # Send a fallback response on error
         yield f"I'm sorry, an error occurred.|||SUGGESTIONS|||[]"
 
-
 @api_view(['POST'])
-@permission_classes([IsAuthenticated]) # Add this decorator
 def chatbot_reply(request):
-    
+    # ... (this view remains the same)
     if not model:
         return Response({"error": "Model not initialized."}, status=500)
-
     chat_history_raw = request.data.get("history", [])
     if not chat_history_raw:
         return Response({"error": "Message history cannot be empty."}, status=400)
-
     formatted_history = []
     for message in chat_history_raw:
         role = "model" if message.get("sender") == "bot" else "user"
-        formatted_history.append({
-            "role": role,
-            "parts": [{"text": message.get("text")}]
-        })
-
-    # Return a StreamingHttpResponse that uses the generator
+        formatted_history.append({"role": role, "parts": [{"text": message.get("text")}]})
     return StreamingHttpResponse(stream_gemini_response(formatted_history), content_type='text/plain')
 
-
-# --- VIEW FOR HIRING REQUESTS (No changes needed here) ---
-
+# --- HIRING REQUEST VIEW (No changes needed here) ---
 @api_view(['POST'])
-@permission_classes([IsAuthenticated]) # Add this decorator
 def submit_hiring_request(request):
+    # ... (this view remains the same)
     serializer = HiringRequestSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# --- NEW VIEW FOR TEXT-TO-SPEECH ---
+@api_view(['POST'])
+def synthesize_speech(request):
+    if not tts_model:
+        return Response({"error": "TTS Model not initialized."}, status=500)
+    
+    text_to_speak = request.data.get('text', '')
+    if not text_to_speak:
+        return Response({"error": "No text provided"}, status=400)
+
+    try:
+        # Generate audio content using the Gemini TTS model
+        response = tts_model.generate_content(
+            f"Say in a clear, friendly voice: {text_to_speak}",
+            generation_config=genai.types.GenerationConfig(
+                response_modalities=["AUDIO"],
+                speech_config=genai.types.SpeechConfig(
+                    voice_config=genai.types.VoiceConfig(
+                        prebuilt_voice_config=genai.types.PrebuiltVoiceConfig(
+                            voice_name="Puck" # A friendly, upbeat voice
+                        )
+                    )
+                )
+            )
+        )
+        
+        # The API returns the audio data directly in the response
+        audio_part = response.candidates[0].content.parts[0]
+        audio_data = audio_part.inline_data.data
+        mime_type = audio_part.inline_data.mime_type
+        
+        return JsonResponse({'audioContent': audio_data, 'mimeType': mime_type})
+
+    except Exception as e:
+        print(f"Error during TTS synthesis: {traceback.format_exc()}")
+        return Response({"error": str(e)}, status=500)
