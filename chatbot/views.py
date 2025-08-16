@@ -193,11 +193,18 @@ def chatbot_reply(request):
 
         formatted_history = []
         for message in chat_history_raw:
+            text = message.get("text")
+            if not text or not text.strip():
+                continue  # 🚀 Skip empty/None messages
+
             role = "model" if message.get("sender") == "bot" else "user"
             formatted_history.append({
                 "role": role,
-                "parts": [{"text": message.get("text")}]
+                "parts": [{"text": text}]
             })
+
+        if not formatted_history:
+            return Response({"error": "No valid messages in history."}, status=400)
 
         return StreamingHttpResponse(
             stream_gemini_response(formatted_history),
@@ -206,6 +213,8 @@ def chatbot_reply(request):
     except Exception as e:
         print("chatbot_reply error:", traceback.format_exc())
         return Response({"error": str(e)}, status=500)
+
+
 
 
 # --- HIRING REQUEST VIEW (No changes needed here) ---
