@@ -183,17 +183,30 @@ def stream_gemini_response(history):
 @api_view(['POST'])
 @csrf_exempt
 def chatbot_reply(request):
-    # ... (this view remains the same)
-    if not model:
-        return Response({"error": "Model not initialized."}, status=500)
-    chat_history_raw = request.data.get("history", [])
-    if not chat_history_raw:
-        return Response({"error": "Message history cannot be empty."}, status=400)
-    formatted_history = []
-    for message in chat_history_raw:
-        role = "model" if message.get("sender") == "bot" else "user"
-        formatted_history.append({"role": role, "parts": [{"text": message.get("text")}]})
-    return StreamingHttpResponse(stream_gemini_response(formatted_history), content_type='text/plain')
+    try:
+        if not model:
+            return Response({"error": "Model not initialized."}, status=500)
+
+        chat_history_raw = request.data.get("history", [])
+        if not chat_history_raw:
+            return Response({"error": "Message history cannot be empty."}, status=400)
+
+        formatted_history = []
+        for message in chat_history_raw:
+            role = "model" if message.get("sender") == "bot" else "user"
+            formatted_history.append({
+                "role": role,
+                "parts": [{"text": message.get("text")}]
+            })
+
+        return StreamingHttpResponse(
+            stream_gemini_response(formatted_history),
+            content_type='text/plain'
+        )
+    except Exception as e:
+        print("chatbot_reply error:", traceback.format_exc())
+        return Response({"error": str(e)}, status=500)
+
 
 # --- HIRING REQUEST VIEW (No changes needed here) ---
 @api_view(['POST'])

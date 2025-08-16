@@ -31,7 +31,7 @@ SECRET_KEY = 'django-insecure-k9#pt!mbd^%%81h1=kx8v0oby#$^5@tsj00+n#nr&4d%16atdr
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['backend-3j4r.onrender.com', 'localhost', '127.0.0.1','localhost:5173', '0.0.0.0:5173', 'https://man-navlakha.netlify.app', ]
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'sslserver',
     'drf_yasg',
     'chatbot',
     'corsheaders', # corsheaders should be listed here
@@ -65,12 +66,22 @@ MIDDLEWARE = [
 
 # To this (replace with your actual frontend URL):
 CORS_ALLOWED_ORIGINS = [
-    "https://man-navlakha.netlify.app",
-    "https://172.20.10.4:5173",
-    "http://localhost:5173", # Keep for local development
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://172.20.10.4:5173",   # your mobile dev host
+    "https://man-navlakha.netlify.app",  # your deployed frontend
 ]
 
-CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_ALL_ORIGINS = True
+
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://backend-3j4r.onrender.com",
+    "https://man-navlakha.netlify.app",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://172.20.10.4:5173",   # your mobile dev host
+]
 
 
 
