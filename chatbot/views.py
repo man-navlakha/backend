@@ -13,6 +13,11 @@ import traceback
 from .models import HiringRequest
 from .serializers import HiringRequestSerializer
 
+
+# --- KEY CHANGE: Import csrf_exempt ---
+from django.views.decorators.csrf import csrf_exempt
+
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -176,6 +181,7 @@ def stream_gemini_response(history):
         yield f"I'm sorry, an error occurred.|||SUGGESTIONS|||[]"
 
 @api_view(['POST'])
+@csrf_exempt
 def chatbot_reply(request):
     # ... (this view remains the same)
     if not model:
@@ -191,6 +197,7 @@ def chatbot_reply(request):
 
 # --- HIRING REQUEST VIEW (No changes needed here) ---
 @api_view(['POST'])
+@csrf_exempt
 def submit_hiring_request(request):
     # ... (this view remains the same)
     serializer = HiringRequestSerializer(data=request.data)
@@ -201,6 +208,7 @@ def submit_hiring_request(request):
 
 # --- NEW VIEW FOR TEXT-TO-SPEECH ---
 @api_view(['POST'])
+@csrf_exempt
 def synthesize_speech(request):
     if not tts_model:
         return Response({"error": "TTS Model not initialized."}, status=500)
