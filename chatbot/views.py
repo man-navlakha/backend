@@ -19,38 +19,6 @@ from .serializers import HiringRequestSerializer
 from django.views.decorators.csrf import csrf_exempt
 
 
-@api_view(['GET'])
-@csrf_exempt
-def get_github_activity(request):
-    # --- IMPORTANT: Replace 'YOUR_GITHUB_USERNAME' with your actual username ---
-    github_username = "YOUR_GITHUB_USERNAME" 
-    try:
-        url = f"https://api.github.com/users/{github_username}/events/public"
-        response = requests.get(url)
-        response.raise_for_status() # Raise an exception for bad status codes
-        events = response.json()
-
-        # Find the latest push event
-        for event in events:
-            if event['type'] == 'PushEvent':
-                commit = event['payload']['commits'][0]
-                repo_name = event['repo']['name']
-                commit_message = commit['message']
-                commit_url = f"https://github.com/{repo_name}/commit/{commit['sha']}"
-                
-                # Format the response
-                formatted_response = (
-                    f"My latest commit was to the **{repo_name}** repository.\n"
-                    f"*- Message:* \"{commit_message}\"\n"
-                    f"*You can view it here:* [{commit['sha'][:7]}]({commit_url})"
-                )
-                return Response({"activity": formatted_response})
-        
-        return Response({"activity": "I couldn't find a recent commit."})
-
-    except requests.exceptions.RequestException as e:
-        print(f"GitHub API Error: {e}")
-        return Response({"error": "Failed to fetch data from GitHub."}, status=500)
 
 from .utils import markdown_to_whatsapp
 
@@ -76,12 +44,14 @@ You are Man's Portfolio Assistant. Your goal is to answer questions about Mann's
 7.  Your final output MUST be structured as follows: First, your text reply. Then, a unique separator '|||SUGGESTIONS|||'. Finally, a valid JSON array of the 3 suggestion strings. **Do NOT wrap the JSON array in Markdown code blocks or backticks.**
 8.  Man , Mann, Man Navlakha is same
 9.  if they asked about your name, you should say "My name is Mann Navlakha".
-10. **When you describe a project , you MUST include its image using the Markdown format `![Project Name](imageUrl)`. Place the image *after* the project description.**
+10. **When you describe a project , you MUST include its image using the Markdown format `![Project Name](imageUrl)`. Place the image *after* the project description. if there is no Screenshot/photo in the project then say hidden for some legal issue**
 11. write in small small paragraph that look better to read, write like that can read better.
 12. if they ask something like "Walk me through your resume" then write in this squence Summary, Education (in list), Experience (in list), Skills (in list), Projects (in list) and Contact
 13. **When responding with a list (like projects or experiences), first provide a brief introductory sentence. Then, separate the introduction and EACH subsequent list item with the `|||MSG|||` separator.**
 14. if someone ask you what are you doing? ask like you are Man Navlakha
 15. **If a user asks about your "latest activity", "recent work", or "last commit", you MUST respond with *only* the exact text `[TOOL_CALL:GET_LATEST_COMMIT]` and nothing else.**
+16. **When a user asks for a "resume" or "CV", you MUST respond with *only* the following special document tag. Fill in the details accurately:**
+`[DOCUMENT:{"fileName": "Mann_Navlakha_Resume.pdf", "fileUrl": "https://ik.imagekit.io/pxc/mannavlakha/Man%20Navlakha%20Resume.pdf", "fileSize": "128 KB", "fileType": "PDF Document"}]`
 
 ---
 
@@ -155,7 +125,6 @@ Currently now working on corporate job but they doing this BCA + New Project Cal
 
 * **4. System App for Windows:**
     *  **Details:**
-        * ![Screenshot](https://ik.imagekit.io/pxc/mannavlakha/image.png)
         * **Description:** A Windows app displaying system information.
         * **GitHub:** [View on GitHub](https://github.com/man-navlakha/system-app)
 
@@ -340,3 +309,61 @@ def synthesize_speech(request):
     except Exception as e:
         print(f"Error during TTS synthesis: {traceback.format_exc()}")
         return Response({"error": str(e)}, status=500)
+
+
+
+@api_view(['GET'])
+@csrf_exempt
+def get_github_activity(request):
+    github_username = "man-navlakha" # Your username is correct here
+    
+    # --- START OF CHANGES ---
+    token = os.getenv("GITHUB_PAT")
+    if not token:
+        print("GitHub PAT not found in environment variables.")
+        return Response({"error": "Server configuration error: GitHub token missing."}, status=500)
+
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "YourAppNameHere"
+    }
+
+    try:
+        url = f"https://api.github.com/users/{github_username}/events/public"
+        headers = {
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "YourAppNameHere"  # Always good to include
+        }
+        
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        events = response.json()
+
+        for event in events:
+            if event.get('type') == 'PushEvent' and event.get('payload', {}).get('commits'):
+                commit = event['payload']['commits'][0]
+                repo_name = event.get('repo', {}).get('name', 'Unknown Repo')
+                commit_message = commit.get('message', 'No message')
+                commit_sha = commit.get('sha')
+
+                # Make a second request to get full commit info (to access html_url)
+                repo_api_url = f"https://api.github.com/repos/{repo_name}/commits/{commit_sha}"
+                commit_detail_resp = requests.get(repo_api_url, headers=headers)
+                commit_detail_resp.raise_for_status()
+                commit_detail = commit_detail_resp.json()
+
+                commit_url = commit_detail.get('html_url', f"https://github.com/{repo_name}/commit/{commit_sha}")
+
+                formatted_response = (
+                    f"My latest commit was to the **{repo_name}** repository.\n"
+                    f"*- Message:* \"{commit_message}\"\n"
+                    f"*You can view it here:* [{commit_sha[:7]}]({commit_url})"
+                )
+                return Response({"activity": formatted_response})
+
+        return Response({"activity": "I couldn't find a recent commit."})
+
+    except requests.exceptions.RequestException as e:
+        print(f"GitHub API Error: {e}")
+        return Response({"error": "Failed to fetch data from GitHub."}, status=500)

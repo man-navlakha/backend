@@ -8,5 +8,5 @@ urlpatterns = [
     path('hire/', submit_hiring_request),
       path('synthesize-speech/', synthesize_speech), # Add this line
       
-      path('api/github-activity/', get_github_activity, name='get_github_activity'),
+      path('github-activity/', get_github_activity, name='get_github_activity'),
 ]
