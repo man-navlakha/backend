@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_yasg',
     'chatbot',
+    'vishal',
     'corsheaders', # corsheaders should be listed here
 ]
 

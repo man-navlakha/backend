@@ -27,6 +27,7 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('chatbot.urls')),
+    path('vishal/', include('vishal.urls')),
     
     # --- Corrected URL for the root path ---
     path('', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
