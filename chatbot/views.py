@@ -1,15 +1,17 @@
 # your_app/views.py
-
 import os
 import json
 import google.generativeai as genai
-from django.http import StreamingHttpResponse, JsonResponse
+import traceback
+import uuid
+import base64
+from django.http import JsonResponse, StreamingHttpResponse
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from dotenv import load_dotenv
-import traceback
+from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
+from dotenv import load_dotenv
 import requests 
 
 from .models import HiringRequest
@@ -39,20 +41,27 @@ load_dotenv()
 # --- Function to load portfolio data from the markdown file ---
 def load_portfolio_data():
     """Reads the portfolio data from the markdown file."""
+    # Ensure the path is correct relative to your manage.py file
+    # If your 'chatbot' app is at the same level as manage.py, this is correct.
     file_path = os.path.join(settings.BASE_DIR, 'chatbot', 'portfolio_data.md')
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             return f.read()
     except FileNotFoundError:
-        print("ERROR: portfolio_data.md not found!")
+        print(f"ERROR: portfolio_data.md not found at path: {file_path}")
         return "Portfolio data is currently unavailable."
+    except Exception as e:
+        print(f"An error occurred reading portfolio_data.md: {e}")
+        return "Portfolio data is currently unavailable due to an error."
 
 # --- LOAD THE DATA ---
 PORTFOLIO_DATA = load_portfolio_data()
 
 
 # --- YOUR PERSONAL PORTFOLIO DATA ---
-PROFILE_PROMPT = """
+# SOLUTION: Add 'f' before the opening quotes to make this an f-string.
+# Now, the content of the PORTFOLIO_DATA variable will be correctly inserted.
+PROFILE_PROMPT = f"""
 You are Man's Portfolio Assistant. Your goal is to answer questions about Mann's skills, experience, and projects in a helpful, friendly, and professional manner.
 
 **IMPORTANT RULES:**
@@ -71,9 +80,9 @@ You are Man's Portfolio Assistant. Your goal is to answer questions about Mann's
 13. **When responding with a list (like projects or experiences), first provide a brief introductory sentence. Then, separate the introduction and EACH subsequent list item with the `|||MSG|||` separator.**
 14. if someone ask you what are you doing? ask like you are Man Navlakha
 15. **If a user asks about your "latest activity", "recent work", or "last commit", you MUST respond with *only* the exact text `[TOOL_CALL:GET_LATEST_COMMIT]` and nothing else.**
-16. **When a user asks for a "resume" or "CV", you MUST respond with *only* the following special document tag. Fill in the details accurately:** `[DOCUMENT:{"fileName": "Mann_Navlakha_Resume.pdf", "fileUrl": "https://ik.imagekit.io/pxc/mannavlakha/Man%20Navlakha%20Resume.pdf", "fileSize": "128 KB", "fileType": "PDF Document"}]`
-117. **(Sticker Rule) You have a special ability to generate a simple, sticker-style image. You should ONLY use this for high-impact moments like achievements or summaries. When you decide to generate a sticker, your *entire response for that turn must be ONLY the tool call*. Do NOT include any other text, greetings, or explanations.**
-18. **(Sticker Formatting) The tool call format is `[TOOL_CALL:GENERATE_STICKER:{"prompt": "your descriptive prompt here"}]`. Ensure the JSON inside is perfectly valid (e.g., use single `{` and `}` and proper quotes). After you send this tool call, you will be given the image URL and asked to formulate the final text response which will include the image.**
+16. **When a user asks for a "resume" or "CV", you MUST respond with *only* the following special document tag. Fill in the details accurately:** `[DOCUMENT:{{"fileName": "Mann_Navlakha_Resume.pdf", "fileUrl": "https://ik.imagekit.io/pxc/mannavlakha/Man%20Navlakha%20Resume.pdf", "fileSize": "128 KB", "fileType": "PDF Document"}}]`
+17. **(Sticker Rule) You have a special ability to generate a simple, sticker-style image. You should ONLY use this for high-impact moments like achievements or summaries. When you decide to generate a sticker, your *entire response for that turn must be ONLY the tool call*. Do NOT include any other text, greetings, or explanations.**
+18. **(Sticker Formatting) The tool call format is `[TOOL_CALL:GENERATE_STICKER:{{"prompt": "your descriptive prompt here"}}]`. Ensure the JSON inside is perfectly valid (e.g., use single `{{` and `}}` and proper quotes). After you send this tool call, you will be given the image URL and asked to formulate the final text response which will include the image.**
 19. If someone ask about you than tell You build in React, Tailwind css & Backend Api is build in Django (Python), also with Gemini API for responce
 ---
 
@@ -83,7 +92,6 @@ Currently now not working on they doing this BCA + New Project Called Mechanic S
 {PORTFOLIO_DATA}
 ---
 """
-
 
 
 
@@ -184,60 +192,56 @@ def submit_hiring_request(request):
 @csrf_exempt
 def generate_sticker_image(request):
     """
-    Generates an image based on a prompt, uploads it to ImageKit,
-    and returns the public URL.
+    Generates an image based on a prompt using the Gemini API, 
+    uploads it to ImageKit, and returns the public URL.
     """
     if not imagekit:
         return Response({"error": "Image hosting service is not configured."}, status=500)
+    
+    # Check if the main Gemini model is configured from your existing setup
+    if not model:
+        return Response({"error": "Gemini API is not configured."}, status=500)
 
-    prompt = request.data.get('prompt', 'a friendly robot waving')
-    print(f"Received request to generate sticker with prompt: '{prompt}'")
+    prompt_text = request.data.get('prompt', 'a friendly robot waving')
+    # Add style hints to the prompt for a "sticker" look
+    final_prompt = f"a cute sticker of {prompt_text}, vector art, simple illustration, white background, high quality"
+    
+    print(f"Received request to generate sticker with Gemini, prompt: '{final_prompt}'")
 
     try:
         # ======================================================================
-        # == PART 1: HYPOTHETICAL GEMINI IMAGE GENERATION API CALL            ==
+        # == PART 1: GEMINI IMAGE GENERATION API CALL                         ==
         # ======================================================================
-        # This section simulates the output from the Gemini image model.
-        # When the actual SDK is available, you will replace this simulation
-        # with the real API call. Image APIs typically return data as bytes
-        # or a base64 encoded string.
+        
+        # Initialize the specific Gemini model for image generation
+        # NOTE: Using the latest recommended preview model for this task.
+        image_model = genai.GenerativeModel('gemini-2.5-flash-image-preview')
 
-        # EXAMPLE OF A FUTURE API CALL:
-        # image_model = genai.GenerativeModel('gemini-2.0-flash-image-preview')
-        # response = image_model.generate_content(prompt)
-        # image_base64 = response.candidates[0].content.parts[0].inline_data.data
+        # Generate the image content
+        response = image_model.generate_content(final_prompt)
         
-        # --- SIMULATION ---
-        # Using a tiny, transparent 1x1 pixel PNG as placeholder data.
-        # This is the base64 string that represents the image.
-        placeholder_png_base64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+        # The image data is returned in the 'parts' of the first candidate.
+        # We need to access the raw binary data from the response.
+        image_data_bytes = response.candidates[0].content.parts[0].inline_data.data
         
-        # We decode the base64 string into raw bytes, which is what the
-        # uploader library expects.
-        image_data_bytes = base64.b64decode(placeholder_png_base64)
-        # --- END SIMULATION ---
-        
+        if not image_data_bytes:
+             raise Exception("Image generation failed: No image data returned from Gemini API.")
         
         # ======================================================================
-        # == PART 2: UPLOAD THE IMAGE TO IMAGEKIT.IO                          ==
+        # == PART 2: UPLOAD THE IMAGE TO IMAGEKIT.IO (This part is unchanged) ==
         # ======================================================================
-        # We use `uuid` to create a random, unique filename. This prevents
-        # files from being accidentally overwritten.
         unique_filename = f"sticker_{uuid.uuid4().hex}.png"
-        
         print(f"Uploading to ImageKit as '{unique_filename}'...")
 
-        # Calling the upload method from the ImageKit SDK
         upload_response_obj = imagekit.upload(
-            file=image_data_bytes,          # The raw image data in bytes
-            file_name=unique_filename,      # The unique name for the file
+            file=image_data_bytes,
+            file_name=unique_filename,
             options={
-                "folder": "/portfolio-chatbot-stickers/", # Organizes files in your Media Library
-                "is_private_file": False,   # Ensures the file is publicly accessible
+                "folder": "/portfolio-chatbot-stickers/",
+                "is_private_file": False,
             }
         )
         
-        # The SDK returns an object; we get the response dictionary from it.
         response_metadata = upload_response_obj.get("response", {})
         image_url = response_metadata.get("url")
         
@@ -248,7 +252,7 @@ def generate_sticker_image(request):
         print(f"Upload successful. URL: {image_url}")
         
         # ======================================================================
-        # == PART 3: RETURN THE PUBLIC URL TO THE FRONTEND                    ==
+        # == PART 3: RETURN THE PUBLIC URL (This part is unchanged)           ==
         # ======================================================================
         return JsonResponse({"imageUrl": image_url})
 
