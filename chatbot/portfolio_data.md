@@ -78,19 +78,28 @@
 
 * **5. Portfolio:**
     *  **Details:**
+        * **Tech Stack:** React.js, Tailwind CSS, Node.js, Django, python
         * ![Portfolio](https://ik.imagekit.io/pxc/mannavlakha/image.png)
         * **Description:** Mann's personal portfolio website, built using React.js and TailwindCSS.
         * **Live Site:** [Visit Site](https://man-navlakha.netlify.app/)
         * **GitHub:** [View on GitHub](https://github.com/man-navlakha/profile)
+     
+          
+* **6. Dynamic Image API:**
+    *  **Details:**
+        * **Tech Stack:** React.js, Tailwind CSS, Node.js, Express JS
+        * **Description:**  the Dynamic Image API, a powerful and flexible service for fetching animal images on demand. This API also includes a sample endpoint for managing user data.
+        * **Live Site:** [Visit Site](https://img-server-theta.vercel.app/)
+        * **GitHub:** [View on GitHub](https://github.com/man-navlakha/Dynamic-Image-Server)
 
 
-* **6. System App for Windows:**
+* **7. System App for Windows:**
     *  **Details:**
         * **Description:** A Windows app displaying system information.
         * **GitHub:** [View on GitHub](https://github.com/man-navlakha/system-app)
 
 
-* **7. Rent PC Security App for Windows:**
+* **8. Rent PC Security App for Windows:**
     *  **Details:**
         * **Description:** A Windows Tray app displaying shop & company details and messages. Built using Python.
         * **GitHub:** [View on GitHub](https://github.com/man-navlakha/psr)
