@@ -63,10 +63,18 @@
             [Github Frontend](https://github.com/man-navlakha/career-intern)
             [Github Backend](https://github.com/man-navlakha/server)
 
-* **4. System App for Windows:**
+* **4. Mechanic Setu (for College Project):**
     *  **Details:**
-        * **Description:** A Windows app displaying system information.
-        * **GitHub:** [View on GitHub](https://github.com/man-navlakha/system-app)
+        *  **Date:** Set 2025 - Present · During College
+        *  **Status:** Undedevelopment
+        * **Tech Stack:** React.js, Tailwind CSS, Node.js, Django
+        * **Description:** As a frontend developer for the "Machanic Setu" project, an on-demand roadside assistance platform, I was responsible for developing the user-facing applications using React and Tailwind CSS, specifically the User App and the Mechanic App. My contributions included implementing the core user flow for requesting and providing services, such as location sharing, service selection, mechanic discovery and tracking, digital invoicing, and a rating/review system for users, alongside mechanic functionalities like online/offline status, job notifications, and status updates, all while ensuring a seamless and intuitive experience for both vehicle owners and mechanics. "Machanic Setu" is a two-sided digital platform designed to connect vehicle owners experiencing a flat tire or other minor vehicle issues with nearby, verified mechanics. The platform will function as a real-time marketplace, similar to Zomato or Uber, providing convenience, speed, and reliability for users in distress, while offering mechanics a new channel to acquire customers and increase their earnings.
+
+        * **Link:** 
+            [Visit UserSide](https://mechanicsetu.netlify.app/)
+            [Visit Mechanicside](https://mechanic-setu.netlify.app/)
+            [Github UserSide](https://github.com/man-navlakha/MS)
+            [Github Mechanicside](https://github.com/man-navlakha/Mechenic)
 
 * **5. Portfolio:**
     *  **Details:**
@@ -75,7 +83,14 @@
         * **Live Site:** [Visit Site](https://man-navlakha.netlify.app/)
         * **GitHub:** [View on GitHub](https://github.com/man-navlakha/profile)
 
-* **6. Rent PC Security App for Windows:**
+
+* **6. System App for Windows:**
+    *  **Details:**
+        * **Description:** A Windows app displaying system information.
+        * **GitHub:** [View on GitHub](https://github.com/man-navlakha/system-app)
+
+
+* **7. Rent PC Security App for Windows:**
     *  **Details:**
         * **Description:** A Windows Tray app displaying shop & company details and messages. Built using Python.
         * **GitHub:** [View on GitHub](https://github.com/man-navlakha/psr)
