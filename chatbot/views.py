@@ -99,7 +99,7 @@ Currently now not working on they doing this BCA + New Project Called Mechanic S
 try:
     genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
     model = genai.GenerativeModel(
-        model_name='gemini-1.5-flash-001',
+        model_name='gemini-2.5-flash',
         system_instruction=PROFILE_PROMPT
     )
 except Exception as e:
