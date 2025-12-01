@@ -99,14 +99,13 @@ Currently now not working on they doing this BCA + New Project Called Mechanic S
 try:
     genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
     model = genai.GenerativeModel(
-        model_name='gemini-1.5-flash',
+        model_name='gemini-1.5-flash-001',
         system_instruction=PROFILE_PROMPT
     )
 except Exception as e:
     print(f"API Key not configured or model initialization failed: {e}")
     model = None
     tts_model = None
-
 
 def stream_gemini_response(history):
     try:
