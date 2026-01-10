@@ -3,8 +3,8 @@ import os
 import json
 import google.generativeai as genai
 import traceback
-import uuid
-import base64
+import uuid  # For generating unique filenames
+import base64  # To handle image data
 from django.http import JsonResponse, StreamingHttpResponse
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -12,14 +12,11 @@ from rest_framework import status
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from dotenv import load_dotenv
+
+# Load environment variables at the top
+load_dotenv()
+
 import requests 
-
-from .models import HiringRequest
-from .serializers import HiringRequestSerializer
-from django.views.decorators.csrf import csrf_exempt
-
-import uuid # For generating unique filenames
-import base64 # To handle image data
 from imagekitio import ImageKit
 
 imagekit = ImageKit(
@@ -28,95 +25,131 @@ imagekit = ImageKit(
     url_endpoint=os.getenv('IMAGEKIT_URL_ENDPOINT')
 )
 
-from .utils import markdown_to_whatsapp
+from .utils import markdown_to_whatsapp, send_hiring_notifications, send_contact_notifications, get_latest_github_activity
 
 def chat_response(markdown_text):
     whatsapp_text = markdown_to_whatsapp(markdown_text)
     return whatsapp_text
 
-# Load environment variables from .env file
-load_dotenv()
+# --- Models and Serializers ---
+from .models import HiringRequest, ContactRequest, ChatSession, ChatMessage
+from .serializers import HiringRequestSerializer, ContactRequestSerializer
 
 
 # --- Function to load portfolio data from the markdown file ---
 def load_portfolio_data():
-    """Reads the portfolio data from the markdown file."""
-    # Ensure the path is correct relative to your manage.py file
-    # If your 'chatbot' app is at the same level as manage.py, this is correct.
+    """Reads the portfolio data from the markdown file and database."""
     file_path = os.path.join(settings.BASE_DIR, 'chatbot', 'portfolio_data.md')
+    markdown_content = ""
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
-            return f.read()
+            markdown_content = f.read()
     except FileNotFoundError:
-        print(f"ERROR: portfolio_data.md not found at path: {file_path}")
-        return "Portfolio data is currently unavailable."
-    except Exception as e:
-        print(f"An error occurred reading portfolio_data.md: {e}")
-        return "Portfolio data is currently unavailable due to an error."
+        markdown_content = "Markdown portfolio data unavailable."
 
-# --- LOAD THE DATA ---
-PORTFOLIO_DATA = load_portfolio_data()
-
-
-# --- YOUR PERSONAL PORTFOLIO DATA ---
-# SOLUTION: Add 'f' before the opening quotes to make this an f-string.
-# Now, the content of the PORTFOLIO_DATA variable will be correctly inserted.
-PROFILE_PROMPT = f"""
-You are Man's Portfolio Assistant. Your goal is to answer questions about Mann's skills, experience, and projects in a helpful, friendly, and professional manner.
-
-**IMPORTANT RULES:**
-1.  **If a user asks a question that cannot be answered using the provided information, you MUST politely refuse by saying: "I can only answer questions about Mann's portfolio. How can I help you with that?" and then provide 3 helpful suggestions that ARE answerable from the information below, to guide the user back on topic.**
-2.  Base all your answers *only* on the information provided below about Mann.
-3.  After generating your answer, create 3 relevant, short follow-up questions a user might ask next. These suggestions must also be answerable from the provided information.
-4.  If a user expresses interest in hiring Mann, your reply should be: "That's great to hear! To proceed, please provide your name, email, and a brief message about the project or role. You can submit this information through the hiring form."
-5.  **Crucially, when you mention a project link, you MUST format it as a Markdown hyperlink. For example: [Visit Site](https://example.com).**
-6.  **When listing multiple items like projects, experiences, skills, etc., you MUST use Markdown bullet points (e.g., using * or -).**
-7.  Your final output MUST be structured as follows: First, your text reply. Then, a unique separator '|||SUGGESTIONS|||'. Finally, a valid JSON array of the 3 suggestion strings. **Do NOT wrap the JSON array in Markdown code blocks or backticks.**
-8.  Man , Mann, Man Navlakha is same
-9.  if they asked about your name, you should say "My name is Mann Navlakha".
-10. **When you describe a project , you MUST include its image using the Markdown format `![Project Name](imageUrl)`. Place the image *after* the project description. if there is no Screenshot/photo in the project then say hidden for some legal issue**
-11. write in small small paragraph that look better to read, write like that can read better.
-12. if they ask something like "Walk me through your resume" then write in this squence Summary, Education (in list), Experience (in list), Skills (in list), Projects (in list) and Contact
-13. **When responding with a list (like projects or experiences), first provide a brief introductory sentence. Then, separate the introduction and EACH subsequent list item with the `|||MSG|||` separator.**
-14. if someone ask you what are you doing? ask like you are Man Navlakha
-15. **If a user asks about your "latest activity", "recent work", or "last commit", you MUST respond with *only* the exact text `[TOOL_CALL:GET_LATEST_COMMIT]` and nothing else.**
-16. **When a user asks for a "resume" or "CV", you MUST respond with *only* the following special document tag. Fill in the details accurately:** `[DOCUMENT:{{"fileName": "Mann_Navlakha_Resume.pdf", "fileUrl": "https://ik.imagekit.io/pxc/mannavlakha/Man%20Navlakha%20Resume.pdf", "fileSize": "128 KB", "fileType": "PDF Document"}}]`
-17. **(Sticker Rule) You have a special ability to generate a simple, sticker-style image. You should ONLY use this for high-impact moments like achievements or summaries. When you decide to generate a sticker, your *entire response for that turn must be ONLY the tool call*. Do NOT include any other text, greetings, or explanations.**
-18. **(Sticker Formatting) The tool call format is `[TOOL_CALL:GENERATE_STICKER:{{"prompt": "your descriptive prompt here"}}]`. Ensure the JSON inside is perfectly valid (e.g., use single `{{` and `}}` and proper quotes). After you send this tool call, you will be given the image URL and asked to formulate the final text response which will include the image.**
-19. If someone ask about you than tell You build in React, Tailwind css & Backend Api is build in Django (Python), also with Gemini API for responce
----
-
-Currently now not working on they doing this BCA + New Project Called Mechanic Setu (Mechanic Setu is a private project can not provide details right now).
-
----
-{PORTFOLIO_DATA}
----
+    # Fetch live project stats from database
+    try:
+        from projects.models import Project
+        from experience.models import Experience
+        
+        db_projects = Project.objects.all()
+        project_stats = "\n### LIVE PROJECT DETAILS & STATS (FROM DATABASE)\n"
+        for p in db_projects:
+            updated_str = p.github_updated_at.strftime('%Y-%m-%d') if p.github_updated_at else "N/A"
+            features_str = ", ".join(p.key_features) if p.key_features else "N/A"
+            
+            project_stats += f"""
+* **{p.title}**
+  - Category: {p.category or 'N/A'}
+  - Built During: {p.get_built_during_display()}
+  - Role: {p.role or 'Contributor'}
+  - Status: {"Live/In Market" if p.is_live else "In Development"}
+  - Overview: {p.overview or 'N/A'}
+  - Views: {p.views}
+  - GitHub: {p.github_stars} Stars, {p.github_forks} Forks (Last push: {updated_str})
+  - Quality: Performance: {p.lighthouse_performance}, SEO: {p.lighthouse_seo}, Accessibility: {p.lighthouse_accessibility}
+  - Test Coverage: {p.test_coverage}%
+  - Key Features: {features_str}
+  - Tech: {", ".join(p.tech_stack)}
+  - Availability: {"Mobile App Available" if p.is_app_available else "Web Only"}
 """
+
+        db_experiences = Experience.objects.all()
+        experience_stats = "\n### LIVE PROFESSIONAL EXPERIENCE (FROM DATABASE)\n"
+        for exp in db_experiences:
+            resp_str = "\n    - ".join(exp.responsibilities) if exp.responsibilities else "N/A"
+            tech_str = ", ".join(exp.tech_stack) if exp.tech_stack else "N/A"
+            duration = f"{exp.start_date} - {exp.end_date or ('Present' if exp.is_current else 'N/A')}"
+            
+            experience_stats += f"""
+* **{exp.role} at {exp.company_name}**
+  - Duration: {duration}
+  - Location: {exp.location or 'N/A'}
+  - Tech Stack: {tech_str}
+  - Key Responsibilities:
+    - {resp_str}
+"""
+        
+        return f"{markdown_content}\n{project_stats}\n{experience_stats}"
+    except Exception as e:
+        print(f"Error loading DB stats: {e}")
+        return markdown_content
+
+# We'll call this inside the view to get fresh data
+
+
+from .prompts import PROFILE_PROMPT
 
 
 
 # Configure the Gemini API client
 try:
     genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+    # Using gemini-flash-latest which points to stable 1.5 with high quotas
     model = genai.GenerativeModel(
-        model_name='gemini-2.5-flash',
-        system_instruction=PROFILE_PROMPT
+        model_name='gemini-flash-latest',
     )
 except Exception as e:
     print(f"API Key not configured or model initialization failed: {e}")
     model = None
     tts_model = None
 
-def stream_gemini_response(history):
+from google.api_core.exceptions import ResourceExhausted, ServiceUnavailable, InvalidArgument, PermissionDenied
+
+def stream_gemini_response(history, system_instruction, retry_count=0):
     try:
-        response_stream = model.generate_content(history, stream=True)
+        # Initialize a fresh model with gemini-flash-latest
+        dynamic_model = genai.GenerativeModel(
+            model_name='gemini-flash-latest',
+            system_instruction=system_instruction
+        )
+        response_stream = dynamic_model.generate_content(history, stream=True)
+        full_response = ""
         for chunk in response_stream:
             if chunk.text:
+                full_response += chunk.text
+                # If we detect the tool call, interrupt and return activity
+                if "[TOOL_CALL:GET_LATEST_COMMIT]" in full_response:
+                    yield get_latest_github_activity()
+                    return
                 yield chunk.text
         yield "" 
+    except ResourceExhausted:
+        if retry_count < 1:
+            import time
+            time.sleep(2)  # Wait 2 seconds and try one last time
+            yield from stream_gemini_response(history, system_instruction, retry_count + 1)
+        else:
+            yield "I'm currently receiving too many requests (API Rate Limit). Please wait a few seconds and try again.|||SUGGESTIONS|||[\"Tell me about your tech stack\", \"What projects have you built?\", \"Show me your resume\"]"
+    except PermissionDenied:
+        yield "The API Key is valid, but the Generative Language API is disabled. Please enable it in Google Cloud Console.|||SUGGESTIONS|||[]"
+    except ServiceUnavailable:
+        yield "The AI service is currently overloaded. Please try again in a moment.|||SUGGESTIONS|||[]"
+    except InvalidArgument:
+        yield "Invalid input received. Please try rephrasing your question.|||SUGGESTIONS|||[]"
     except Exception as e:
         print(f"Error during streaming: {traceback.format_exc()}")
-        yield f"I'm sorry, an error occurred.|||SUGGESTIONS|||[]"
+        yield f"I'm sorry, an unexpected error occurred. (Error: {str(e)})|||SUGGESTIONS|||[]"
 
 # --- A dictionary for simple, non-AI responses ---
 SIMPLE_RESPONSES = {
@@ -134,35 +167,76 @@ def chatbot_reply(request):
         if not model:
             return Response({"error": "Model not initialized."}, status=500)
 
+        # 1. Handle Session for Memory
+        session_id = request.data.get("session_id")
+        session = None
+        if session_id:
+            try:
+                session = ChatSession.objects.get(session_id=session_id)
+            except ChatSession.DoesNotExist:
+                session = ChatSession.objects.create()
+        else:
+            session = ChatSession.objects.create()
+
+        # Regenerate prompt with fresh data
+        current_data = load_portfolio_data()
+        dynamic_prompt = PROFILE_PROMPT.replace("{PORTFOLIO_DATA}", current_data)
+        
         chat_history_raw = request.data.get("history", [])
-        if not chat_history_raw:
-            return Response({"error": "Message history cannot be empty."}, status=400)
+        user_message_text = chat_history_raw[-1].get("text", "") if chat_history_raw else ""
+        
+        if not user_message_text:
+            return Response({"error": "Message cannot be empty."}, status=400)
         
         # --- NEW LOGIC TO HANDLE SIMPLE GREETINGS ---
-        last_user_message = chat_history_raw[-1].get("text", "").lower().strip()
-        if last_user_message in SIMPLE_RESPONSES:
-            # If the message is a simple greeting, return a predefined response
-            predefined_response = SIMPLE_RESPONSES[last_user_message]
-            return StreamingHttpResponse(iter([predefined_response]), content_type='text/plain')
+        last_user_message_lower = user_message_text.lower().strip()
+        if last_user_message_lower in SIMPLE_RESPONSES:
+            predefined_response = SIMPLE_RESPONSES[last_user_message_lower]
+            # Save to DB if session exists
+            ChatMessage.objects.create(session=session, role='user', text=user_message_text)
+            ChatMessage.objects.create(session=session, role='model', text=predefined_response)
+            
+            return StreamingHttpResponse(
+                iter([f"{predefined_response}|||SESSION_ID|||{str(session.session_id)}"]), 
+                content_type='text/plain'
+            )
         # --- END OF NEW LOGIC ---
 
+        # 2. Build history for Gemini from DB (LATEST 10 messages)
+        # We get the most recent ones and then reverse to keep chronological order
+        db_messages = ChatMessage.objects.filter(session=session).order_by('-timestamp')[:10]
         formatted_history = []
-        for message in chat_history_raw:
-            text = message.get("text")
-            if not text or not text.strip():
-                continue  # 🚀 Skip empty/None messages
-
-            role = "model" if message.get("sender") == "bot" else "user"
+        # Reverse them so they are in chronological order (oldest to newest)
+        for msg in reversed(db_messages):
             formatted_history.append({
-                "role": role,
-                "parts": [{"text": text}]
+                "role": "model" if msg.role == "model" else "user",
+                "parts": [{"text": msg.text}]
             })
 
-        if not formatted_history:
-            return Response({"error": "No valid messages in history."}, status=400)
+        # Add the current user message to formatted history if not already there
+        # (Usually history in request contains previous turns, but we rely on DB now)
+        # To be safe, we just use the final message for the generation
+        current_user_part = {"role": "user", "parts": [{"text": user_message_text}]}
+        
+        # Save current user message to DB
+        ChatMessage.objects.create(session=session, role='user', text=user_message_text)
+
+        # 3. Stream response and save model's turn to DB at the end
+        def wrapped_stream():
+            full_reply = ""
+            for chunk in stream_gemini_response(formatted_history + [current_user_part], dynamic_prompt):
+                full_reply += chunk
+                yield chunk
+            
+            # Save model reply to DB once streaming is done
+            if full_reply:
+                ChatMessage.objects.create(session=session, role='model', text=full_reply)
+            
+            # Append session_id info for frontend to store
+            yield f"|||SESSION_ID|||{str(session.session_id)}"
 
         return StreamingHttpResponse(
-            stream_gemini_response(formatted_history),
+            wrapped_stream(),
             content_type='text/plain'
         )
     except Exception as e:
@@ -179,7 +253,20 @@ def submit_hiring_request(request):
     # ... (this view remains the same)
     serializer = HiringRequestSerializer(data=request.data)
     if serializer.is_valid():
-        serializer.save()
+        hiring_request = serializer.save()
+        # Trigger smart notifications
+        send_hiring_notifications(hiring_request)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@csrf_exempt
+def submit_contact_request(request):
+    serializer = ContactRequestSerializer(data=request.data)
+    if serializer.is_valid():
+        contact_request = serializer.save()
+        # Trigger smart notifications
+        send_contact_notifications(contact_request)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -213,8 +300,9 @@ def generate_sticker_image(request):
         # ======================================================================
         
         # Initialize the specific Gemini model for image generation
-        # NOTE: Using the latest recommended preview model for this task.
-        image_model = genai.GenerativeModel('gemini-2.5-flash-image-preview')
+        # NOTE: Using the 2.0 model which supports multimodal tasks.
+        # Using gemini-flash-latest for image tasks
+        image_model = genai.GenerativeModel('gemini-flash-latest')
 
         # Generate the image content
         response = image_model.generate_content(final_prompt)

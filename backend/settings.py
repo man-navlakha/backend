@@ -26,12 +26,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-k9#pt!mbd^%%81h1=kx8v0oby#$^5@tsj00+n#nr&4d%16atdr'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-k9#pt!mbd^%%81h1=kx8v0oby#$^5@tsj00+n#nr&4d%16atdr')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 
 
 # Application definition
@@ -46,7 +46,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_yasg',
     'chatbot',
-    'vishal',
+    'projects',
+    'experience',
     'corsheaders', # corsheaders should be listed here
 ]
 
@@ -60,19 +61,21 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'backend.middleware.ResponseTimeMiddleware',
 ]
 
 
 
-# To this (replace with your actual frontend URL):
+# CORS Configuration
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "http://172.20.10.4:5173",   # your mobile dev host
-    "https://man-navlakha.netlify.app",  # your deployed frontend
+    "http://172.20.10.4:5173",
+    "https://man-navlakha.netlify.app",
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
+# Only allow all origins in DEBUG mode for easier development
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 
 CSRF_TRUSTED_ORIGINS = [
@@ -105,6 +108,25 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'backend.wsgi.application'
+
+# REST Framework Configuration
+REST_FRAMEWORK = {
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '10000/day',
+        'user': '10000/day'
+    },
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+    'EXCEPTION_HANDLER': 'backend.exceptions.custom_exception_handler',
+}
+
+if DEBUG:
+    REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'].append('rest_framework.renderers.BrowsableAPIRenderer')
 
 
 # Database
@@ -162,3 +184,12 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Email Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)

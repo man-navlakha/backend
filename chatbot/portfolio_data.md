@@ -6,7 +6,7 @@
 * **Summary:** A frontend developer with a strong focus on creating responsive, user-friendly interfaces and smooth digital experiences. Mann has extensive experience using React.js. He used it to build the entire career page for HarSar Innovations and the AI model for code review in the Solvinger project. His internship further solidified his React skills, demonstrating his proficiency in building complex, interactive web applications.
 * **Email**: [mannnavlakha1021@gmail.com](mailto:mannnavlakha1021@gmail.com)
 * **Address**: Vasna, Ahmedabad, Gujarat, India
-* **Contect**: 
+* **Contact**: 
     * **email**: mannavlakha1021@gmail.com
     * **Mobile Number**: +91 9913151805
 * **Languages**: Gujarati (Proficient), English (Intermediate), Hindi (Proficient)
@@ -66,7 +66,7 @@
 * **4. Mechanic Setu (for College Project):**
     *  **Details:**
         *  **Date:** Set 2025 - Present · During College
-        *  **Status:** Undedevelopment
+        *  **Status:** Under development
         * **Tech Stack:** React.js, Tailwind CSS, Node.js, Django
         * **Description:** As a frontend developer for the "Machanic Setu" project, an on-demand roadside assistance platform, I was responsible for developing the user-facing applications using React and Tailwind CSS, specifically the User App and the Mechanic App. My contributions included implementing the core user flow for requesting and providing services, such as location sharing, service selection, mechanic discovery and tracking, digital invoicing, and a rating/review system for users, alongside mechanic functionalities like online/offline status, job notifications, and status updates, all while ensuring a seamless and intuitive experience for both vehicle owners and mechanics. "Machanic Setu" is a two-sided digital platform designed to connect vehicle owners experiencing a flat tire or other minor vehicle issues with nearby, verified mechanics. The platform will function as a real-time marketplace, similar to Zomato or Uber, providing convenience, speed, and reliability for users in distress, while offering mechanics a new channel to acquire customers and increase their earnings.
 
@@ -74,7 +74,7 @@
             [Visit UserSide](https://mechanicsetu.netlify.app/)
             [Visit Mechanicside](https://mechanic-setu.netlify.app/)
             [Github UserSide](https://github.com/man-navlakha/MS)
-            [Github Mechanicside](https://github.com/man-navlakha/Mechenic)
+            [Github Mechanicside](https://github.com/man-navlakha/Mechanic)
 
 * **5. Portfolio:**
     *  **Details:**

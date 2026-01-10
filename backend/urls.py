@@ -1,7 +1,5 @@
 from django.contrib import admin
 from django.urls import path, include
-from django.contrib import admin
-from django.urls import path, include
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
@@ -20,14 +18,25 @@ schema_view = get_schema_view(
 )
 # --- End of configuration ---
 
-
-
-
+# API v1 Versioning
+v1_patterns = [
+    path('', include('chatbot.urls')),
+    path('projects/', include('projects.urls')),
+    path('experience/', include('experience.urls')),
+    path('health/', include('chatbot.health_urls')),
+]
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('chatbot.urls')),
-    path('vishal/', include('vishal.urls')),
+    
+    # Versioned API routes
+    path('api/v1/', include((v1_patterns, 'chatbot_v1'), namespace='v1')),
+    
+    # Placeholder for v2
+    # path('api/v2/', include('backend.v2_urls')), 
+
+    # Compatibility: supporting old /api/ paths as well
+    path('api/', include((v1_patterns, 'chatbot_compat'), namespace='compat')),
     
     # --- Corrected URL for the root path ---
     path('', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
