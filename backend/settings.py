@@ -31,7 +31,10 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-k9#pt!mbd^%%81h1=kx8v0oby#
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').replace(' ', '').split(',')
+
+# Render uses a proxy, so we need to trust the X-Forwarded-Proto header
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 # Application definition
@@ -79,13 +82,12 @@ CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 
 CSRF_TRUSTED_ORIGINS = [
+    "https://backend-man-navlakha-portfolio.onrender.com",
     "https://backend-3j4r.onrender.com",
     "https://man-navlakha.netlify.app",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://172.20.10.4:5173",
-    
-    # your mobile dev host
 ]
 
 
