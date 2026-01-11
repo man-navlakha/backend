@@ -19,11 +19,15 @@ load_dotenv()
 import requests 
 from imagekitio import ImageKit
 
-imagekit = ImageKit(
-    private_key=os.getenv('IMAGEKIT_PRIVATE_KEY'),
-    public_key=os.getenv('IMAGEKIT_PUBLIC_KEY'),
-    url_endpoint=os.getenv('IMAGEKIT_URL_ENDPOINT')
-)
+try:
+    imagekit = ImageKit(
+        private_key=os.getenv('IMAGEKIT_PRIVATE_KEY'),
+        public_key=os.getenv('IMAGEKIT_PUBLIC_KEY'),
+        url_endpoint=os.getenv('IMAGEKIT_URL_ENDPOINT')
+    )
+except Exception as e:
+    print(f"ImageKit initialization failed: {e}")
+    imagekit = None
 
 from .utils import markdown_to_whatsapp, send_hiring_notifications, send_contact_notifications, get_latest_github_activity
 
