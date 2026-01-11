@@ -7,3 +7,8 @@ pip install -r requirements.txt
 python manage.py collectstatic --no-input
 python manage.py migrate
 python sync_portfolio.py
+
+# Create superuser if it doesn't exist (Requires DJANGO_SUPERUSER_PASSWORD, etc. in env)
+if [ "$DJANGO_SUPERUSER_USERNAME" ]; then
+  python manage.py createsuperuser --no-input || true
+fi
