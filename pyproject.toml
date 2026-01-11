@@ -37,7 +37,6 @@ dependencies = [
     "imagekitio==4.2.0",
     "inflection==0.5.1",
     "jiter==0.10.0",
-    "openai==1.99.9",
     "packaging==25.0",
     "proto-plus==1.26.1",
     "protobuf==5.29.5",

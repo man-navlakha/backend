@@ -4,7 +4,7 @@ from .utils import update_all_project_stats
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ('title', 'built_during', 'is_live', 'is_featured', 'category', 'views', 'order')
+    list_display = ('title', 'date', 'built_during', 'is_live', 'is_featured', 'category', 'views', 'order')
     list_editable = ('built_during', 'is_featured', 'is_live', 'order', 'category')
     search_fields = ('title', 'description', 'role', 'category')
     list_filter = ('built_during', 'is_featured', 'is_live', 'category', 'is_backend_by_me', 'has_team')
@@ -14,7 +14,7 @@ class ProjectAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('title', 'description', 'overview', 'role', 'category', 'built_during', 'status', 'is_featured', 'is_live', 'order')
+            'fields': ('title', 'description', 'overview', 'date', 'role', 'category', 'built_during', 'status', 'is_featured', 'is_live', 'order')
         }),
         ('Performance & Quality', {
             'fields': (
