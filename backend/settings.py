@@ -31,7 +31,11 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-k9#pt!mbd^%%81h1=kx8v0oby#
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').replace(' ', '').split(',')
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
+env_allowed_hosts = os.getenv('ALLOWED_HOSTS')
+if env_allowed_hosts:
+    ALLOWED_HOSTS.extend(env_allowed_hosts.replace(' ', '').split(','))
+
 RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
@@ -75,9 +79,14 @@ MIDDLEWARE = [
 # CORS Configuration
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "http://localhost:3000",
     "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
     "http://172.20.10.4:5173",
+    "http://172.20.10.4:3000",
     "https://man-navlakha.netlify.app",
+    "https://backend-man-navlakha-portfolio.onrender.com",
+    "https://backend-3j4r.onrender.com",
 ]
 
 # Only allow all origins in DEBUG mode for easier development
@@ -90,7 +99,12 @@ CSRF_TRUSTED_ORIGINS = [
     "https://man-navlakha.netlify.app",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "http://172.20.10.4:5173",
+    "http://localhost:8000",
+    "http://localhost:3000",
+    "http://127.0.0.1:8000",
+    "http://127.0.0.1:3000",
+    "http://172.20.10.4:8000",
+    "http://172.20.10.4:3000",
 ]
 
 
@@ -141,7 +155,7 @@ import dj_database_url
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+        default='postgresql://portfolio_b3yi_user:QOoxyPOlEDlp2W7Yjlj9fyft0SIQFgx5@dpg-d5h58kd6ubrc73fp6i20-a.oregon-postgres.render.com/portfolio_b3yi',
         conn_max_age=600
     )
 }
@@ -183,12 +197,11 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-# --- ADD THESE LINES ---
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Render-specific SSL header
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# Only use whitenoise compression in production
+if not DEBUG:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
