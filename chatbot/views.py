@@ -42,44 +42,68 @@ from .serializers import HiringRequestSerializer, ContactRequestSerializer
 
 # --- Function to load portfolio data from the markdown file ---
 def load_portfolio_data():
-    """Reads the portfolio data from the markdown file and database."""
-    file_path = os.path.join(settings.BASE_DIR, 'chatbot', 'portfolio_data.md')
-    markdown_content = ""
+    """Reads the portfolio data exclusively from the database."""
+    from projects.models import Project
+    from experience.models import Experience, Education
+    from .models import Profile
+    
+    data_parts = []
+    
+    # 1. Profile / About
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            markdown_content = f.read()
-    except FileNotFoundError:
-        markdown_content = "Markdown portfolio data unavailable."
+        profile = Profile.objects.first()
+        if profile:
+            skills_str = ""
+            if profile.skills:
+                for cat, items in profile.skills.items():
+                    skills_str += f"- **{cat}:** {', '.join(items)}\n"
+            
+            socials_str = "\n".join([f"- [{s['name']}]({s['url']})" for s in profile.social_links]) if profile.social_links else "N/A"
+            
+            data_parts.append(f"""
+### ABOUT {profile.name.upper()}
+* **Role:** {profile.role}
+* **Summary:** {profile.summary}
+* **Email:** {profile.email}
+* **Phone:** {profile.phone or 'N/A'}
+* **Address:** {profile.address or 'N/A'}
+* **Languages:** {", ".join(profile.languages) if profile.languages else 'N/A'}
+* **Portfolio Site:** https://man-navlakha.netlify.app/
 
-    # Fetch live project stats from database
+### SKILLS
+{skills_str or 'N/A'}
+
+### SOCIAL LINKS
+{socials_str or 'N/A'}
+""")
+    except Exception as e:
+        print(f"Error loading Profile: {e}")
+
+    # 2. Projects
     try:
-        from projects.models import Project
-        from experience.models import Experience
-        
-        db_projects = Project.objects.all()
-        project_stats = "\n### LIVE PROJECT DETAILS & STATS (FROM DATABASE)\n"
+        db_projects = Project.objects.all().order_by('order')
+        project_stats = "\n### PROJECTS\n"
         for p in db_projects:
             updated_str = p.github_updated_at.strftime('%Y-%m-%d') if p.github_updated_at else "N/A"
-            features_str = ", ".join(p.key_features) if p.key_features else "N/A"
-            
             project_stats += f"""
 * **{p.title}**
   - Category: {p.category or 'N/A'}
   - Built During: {p.get_built_during_display()}
   - Role: {p.role or 'Contributor'}
   - Status: {"Live/In Market" if p.is_live else "In Development"}
-  - Overview: {p.overview or 'N/A'}
-  - Views: {p.views}
+  - Overview: {p.overview or p.description or 'N/A'}
   - GitHub: {p.github_stars} Stars, {p.github_forks} Forks (Last push: {updated_str})
-  - Quality: Performance: {p.lighthouse_performance}, SEO: {p.lighthouse_seo}, Accessibility: {p.lighthouse_accessibility}
-  - Test Coverage: {p.test_coverage}%
-  - Key Features: {features_str}
+  - Quality: Perf: {p.lighthouse_performance}, SEO: {p.lighthouse_seo}, Accessibility: {p.lighthouse_accessibility}
   - Tech: {", ".join(p.tech_stack)}
-  - Availability: {"Mobile App Available" if p.is_app_available else "Web Only"}
 """
+        data_parts.append(project_stats)
+    except Exception as e:
+        print(f"Error loading Projects: {e}")
 
-        db_experiences = Experience.objects.all()
-        experience_stats = "\n### LIVE PROFESSIONAL EXPERIENCE (FROM DATABASE)\n"
+    # 3. Experience
+    try:
+        db_experiences = Experience.objects.all().order_by('order')
+        experience_stats = "\n### PROFESSIONAL EXPERIENCE\n"
         for exp in db_experiences:
             resp_str = "\n    - ".join(exp.responsibilities) if exp.responsibilities else "N/A"
             tech_str = ", ".join(exp.technologies) if exp.technologies else "N/A"
@@ -91,16 +115,31 @@ def load_portfolio_data():
   - Duration: {duration}
   - Location: {exp.location or 'N/A'}
   - Tech Stack: {tech_str}
-  - Key Responsibilities:
+  - Responsibilities:
     - {resp_str}
-  - Key Achievements:
+  - Achievements:
     - {achieve_str}
 """
-        
-        return f"{markdown_content}\n{project_stats}\n{experience_stats}"
+        data_parts.append(experience_stats)
     except Exception as e:
-        print(f"Error loading DB stats: {e}")
-        return markdown_content
+        print(f"Error loading Experience: {e}")
+
+    # 4. Education
+    try:
+        db_education = Education.objects.all().order_by('order')
+        edu_stats = "\n### EDUCATION\n"
+        for edu in db_education:
+            edu_stats += f"""
+* **{edu.degree}**
+  - Institution: {edu.institution}
+  - Period: {edu.period}
+  - Score: {edu.score or 'N/A'}
+"""
+        data_parts.append(edu_stats)
+    except Exception as e:
+        print(f"Error loading Education: {e}")
+
+    return "\n".join(data_parts)
 
 # We'll call this inside the view to get fresh data
 

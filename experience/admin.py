@@ -1,5 +1,10 @@
 from django.contrib import admin
-from .models import Experience
+from .models import Experience, Education
+
+@admin.register(Education)
+class EducationAdmin(admin.ModelAdmin):
+    list_display = ('degree', 'institution', 'period', 'order')
+    list_editable = ('order',)
 
 @admin.register(Experience)
 class ExperienceAdmin(admin.ModelAdmin):

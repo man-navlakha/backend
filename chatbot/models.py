@@ -57,3 +57,22 @@ class ChatMessage(models.Model):
 
     def __str__(self):
         return f"{self.role}: {self.text[:50]}..."
+
+class Profile(models.Model):
+    name = models.CharField(max_length=255)
+    role = models.CharField(max_length=255)
+    summary = models.TextField()
+    email = models.EmailField()
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    address = models.CharField(max_length=255, blank=True, null=True)
+    languages = models.JSONField(default=list, blank=True)
+    skills = models.JSONField(default=dict, blank=True)
+    social_links = models.JSONField(default=list, blank=True)
+    resume_url = models.URLField(max_length=500, blank=True, null=True)
+    photo_url = models.URLField(max_length=500, blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name_plural = "Profile"

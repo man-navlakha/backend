@@ -1,5 +1,9 @@
 from django.contrib import admin
-from .models import HiringRequest, ContactRequest
+from .models import HiringRequest, ContactRequest, Profile
+
+@admin.register(Profile)
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = ('name', 'role', 'email')
 
 @admin.register(HiringRequest)
 class HiringRequestAdmin(admin.ModelAdmin):

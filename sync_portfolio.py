@@ -7,7 +7,8 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
 
 from projects.models import Project
-from experience.models import Experience
+from experience.models import Experience, Education
+from chatbot.models import Profile
 
 def sync_projects(content):
     print("Syncing Projects...")
@@ -66,29 +67,24 @@ def sync_projects(content):
 
 def sync_experience(content):
     print("\nSyncing Experience...")
-    # Find the EXPERIENCE section
     experience_section = re.search(r'### EXPERIENCE(.*?)(### EDUCATION|---|$)', content, re.DOTALL)
     if not experience_section:
         print("Experience section not found")
         return
 
     exp_content = experience_section.group(1)
-    # Split by individual experience items
-    # Each experience starts with * **Company Name:** (at the beginning of a line)
     exp_blocks = re.split(r'\n\* \*\*(.*?):\*\*', '\n' + exp_content)
     
     for i in range(1, len(exp_blocks), 2):
         company_name = exp_blocks[i].strip()
         details = exp_blocks[i+1]
         
-        # Extract fields using more specific regex
         role_match = re.search(r'\*\*Role:\*\* (.*?)(?:\n|$)', details)
         role = role_match.group(1).strip() if role_match else "Developer"
         
         dates_match = re.search(r'\*\*Dates:\*\* (.*?)(?:\n|$)', details)
         dates_str = dates_match.group(1).strip() if dates_match else ""
         
-        # Clean up dates (remove duration like "· 3 mos")
         dates_clean = re.split(r'·', dates_str)[0].strip()
         start_date = dates_clean
         end_date = None
@@ -100,7 +96,6 @@ def sync_experience(content):
         location_match = re.search(r'\*\*Location:\*\* (.*?)(?:\n|$)', details)
         location = location_match.group(1).strip() if location_match else ""
         
-        # Responsibilities are lines starting with -
         responsibilities = re.findall(r'-\s+(.*?)(?:\n|$)', details)
         
         exp, created = Experience.objects.update_or_create(
@@ -108,7 +103,7 @@ def sync_experience(content):
             role=role,
             defaults={
                 'location': location,
-                'period': dates_str, # Store the full period string
+                'period': dates_str,
                 'start_date': start_date,
                 'end_date': end_date,
                 'responsibilities': responsibilities,
@@ -116,6 +111,110 @@ def sync_experience(content):
             }
         )
         print(f"{'Created' if created else 'Updated'} Experience: {role} at {company_name}")
+
+def sync_education(content):
+    print("\nSyncing Education...")
+    edu_section = re.search(r'### EDUCATION(.*?)(---|$)', content, re.DOTALL)
+    if not edu_section:
+        print("Education section not found")
+        return
+
+    edu_content = edu_section.group(1)
+    edu_blocks = re.split(r'\n\* \*\*(.*?)\*\*', '\n' + edu_content)
+    
+    for i in range(1, len(edu_blocks), 2):
+        degree = edu_blocks[i].strip()
+        details = edu_blocks[i+1]
+        
+        uni_match = re.search(r'-\s+\*\*University:\*\* (.*?)(?:\n|$)', details)
+        uni = uni_match.group(1).strip() if uni_match else ""
+        if not uni:
+            uni_match = re.search(r'-\s+\*\*School:\*\* (.*?)(?:\n|$)', details)
+            uni = uni_match.group(1).strip() if uni_match else ""
+
+        dates_match = re.search(r'-\s+\*\*Dates:\*\* (.*?)(?:\n|$)', details)
+        dates = dates_match.group(1).strip() if dates_match else ""
+        
+        score_match = re.search(r'-\s+\*\*(?:CGPA|Percentage).*?:\*\* (.*?)(?:\n|$)', details)
+        score = score_match.group(1).strip() if score_match else ""
+        
+        edu, created = Education.objects.update_or_create(
+            degree=degree,
+            institution=uni,
+            defaults={
+                'period': dates,
+                'score': score,
+                'order': i // 2
+            }
+        )
+        print(f"{'Created' if created else 'Updated'} Education: {degree}")
+
+def sync_profile(content):
+    print("\nSyncing Profile...")
+    about_match = re.search(r'### ABOUT (.*?)\n(.*?)(?=---|$)', content, re.DOTALL | re.IGNORECASE)
+    if not about_match:
+        print("About section not found")
+        return
+    
+    details = about_match.group(2)
+    
+    name_match = re.search(r'\*\*Name\*\*:\s*(.*?)(?:\n|$)', details)
+    name = name_match.group(1).strip() if name_match else "Mann Navlakha"
+    
+    role_match = re.search(r'\*\*Role:\*\*\s*"(.*?)"', details)
+    role = role_match.group(1).strip() if role_match else ""
+    
+    summary_match = re.search(r'\*\*Summary:\*\*\s*(.*?)(?:\n|$)', details)
+    summary = summary_match.group(1).strip() if summary_match else ""
+    
+    email_match = re.search(r'\*\*Email\*\*:\s*\[.*?\]\(mailto:(.*?)\)', details)
+    email = email_match.group(1).strip() if email_match else ""
+    
+    mobile_match = re.search(r'\*\*Mobile Number\*\*:\s*(.*?)(?:\n|$)', details)
+    mobile = mobile_match.group(1).strip() if mobile_match else ""
+    
+    addr_match = re.search(r'\*\*Address\*\*:\s*(.*?)(?:\n|$)', details)
+    address = addr_match.group(1).strip() if addr_match else ""
+    
+    lang_match = re.search(r'\*\*Languages\*\*:\s*(.*?)(?:\n|$)', details)
+    languages = [l.strip() for l in lang_match.group(1).split(',')] if lang_match else []
+    
+    resume_match = re.search(r'\*\*Resume\*\*:\s*\[.*?\]\((.*?)\)', details)
+    resume = resume_match.group(1).strip() if resume_match else ""
+    
+    photo_match = re.search(r'\*\*Photo\*\*:\s*!\[.*?\]\((.*?)\)', details)
+    photo = photo_match.group(1).strip() if photo_match else ""
+    
+    socials = []
+    social_lines = re.findall(r'\*\*([\w\s]+)\*\*:\s*\[.*?\]\((.*?)\)', details)
+    for s_name, s_url in social_lines:
+        if s_name not in ['Resume', 'Photo', 'email', 'Mobile Number', 'Contact', 'Languages', 'Address']:
+            socials.append({"name": s_name.strip(), "url": s_url.strip()})
+
+    # Skills
+    skills_match = re.search(r'### SKILLS(.*?)(?=---|$)', content, re.DOTALL)
+    skills_dict = {}
+    if skills_match:
+        skill_lines = re.findall(r'\* \*\*(.*?):\*\*\s*(.*?)(?:\n|$)', skills_match.group(1))
+        for category, items in skill_lines:
+            skills_dict[category.strip()] = [i.strip() for i in items.split(',')]
+
+    profile, created = Profile.objects.update_or_create(
+        name=name,
+        defaults={
+            'role': role,
+            'summary': summary,
+            'email': email,
+            'phone': mobile,
+            'address': address,
+            'languages': languages,
+            'resume_url': resume,
+            'photo_url': photo,
+            'social_links': socials,
+            'skills': skills_dict
+        }
+    )
+    print(f"{'Created' if created else 'Updated'} Profile for: {name}")
 
 def main():
     file_path = os.path.join('chatbot', 'portfolio_data.md')
@@ -126,8 +225,10 @@ def main():
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
 
+    sync_profile(content)
     sync_projects(content)
     sync_experience(content)
+    sync_education(content)
     print("\nSync complete!")
 
 if __name__ == "__main__":

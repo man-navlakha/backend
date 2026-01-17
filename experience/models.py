@@ -25,3 +25,17 @@ class Experience(models.Model):
 
     class Meta:
         ordering = ['order', '-id']
+
+class Education(models.Model):
+    institution = models.CharField(max_length=255)
+    degree = models.CharField(max_length=255)
+    period = models.CharField(max_length=255) # e.g. "2023 - Present"
+    score = models.CharField(max_length=100, blank=True, null=True) # e.g. "7.21 CGPA"
+    order = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.degree} at {self.institution}"
+
+    class Meta:
+        verbose_name_plural = "Education"
+        ordering = ['order', 'id']
