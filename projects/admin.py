@@ -2,7 +2,6 @@ from django.contrib import admin
 from django.urls import path
 from django.http import HttpResponseRedirect
 from .models import Project
-from .utils import update_all_project_stats
 from .ai_services import ai_magic_fill
 
 @admin.register(Project)
@@ -46,13 +45,12 @@ class ProjectAdmin(admin.ModelAdmin):
         ('Links', {
             'fields': ('website', 'github', 'figma')
         }),
-        ('GitHub Statistics (Auto-synced)', {
+        ('GitHub Statistics', {
             'fields': ('github_stars', 'github_forks', 'github_updated_at'),
-            'description': 'These fields are automatically updated from GitHub but can be adjusted here if needed.'
+            'description': 'View or manually update GitHub statistics.'
         }),
     )
 
-    actions = ['sync_github_stats']
 
     def get_urls(self):
         urls = super().get_urls()
@@ -87,9 +85,3 @@ class ProjectAdmin(admin.ModelAdmin):
         
         return HttpResponseRedirect("../change/")
 
-    @admin.action(description='🔄 Sync selected projects with GitHub')
-    def sync_github_stats(self, request, queryset):
-        # We can optimize this to only sync the selected ones, 
-        # but for simplicity using the existing utility
-        update_all_project_stats()
-        self.message_user(request, "Successfully triggered GitHub sync for all projects.")
