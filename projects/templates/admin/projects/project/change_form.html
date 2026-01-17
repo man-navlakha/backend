@@ -1,0 +1,25 @@
+{% extends 'admin/change_form.html' %}
+{% load i18n admin_urls %}
+
+{% block object-tools %}
+{% if change and not is_popup %}
+<ul class="object-tools">
+    <li>
+        <a href="{% url 'admin:projects-ai-magic-fill' object_id %}" class="historylink"
+            style="background: #7b1fa2 !important; color: white !important; font-weight: bold;">
+            🪄 AI Magic Fill
+        </a>
+    </li>
+    {% block object-tools-items %}
+    <li>
+        <a href="{% url opts|admin_urlname:'history' object_id %}" class="historylink">{% translate "History" %}</a>
+    </li>
+    {% if has_absolute_url %}
+    <li>
+        <a href="{{ absolute_url }}" class="viewsitelink">{% translate "View on site" %}</a>
+    </li>
+    {% endif %}
+    {% endblock %}
+</ul>
+{% endif %}
+{% endblock %}

@@ -1,6 +1,9 @@
 from django.contrib import admin
+from django.urls import path
+from django.http import HttpResponseRedirect
 from .models import Project
 from .utils import update_all_project_stats
+from .ai_services import ai_magic_fill
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
@@ -9,6 +12,8 @@ class ProjectAdmin(admin.ModelAdmin):
     search_fields = ('title', 'description', 'role', 'category')
     list_filter = ('built_during', 'is_featured', 'is_live', 'category', 'is_backend_by_me', 'has_team')
     readonly_fields = ('github_updated_at', 'views')
+    
+    change_form_template = "admin/projects/project/change_form.html"
     
     filter_horizontal = ('related_projects',) # For easy multi-select
     
@@ -48,6 +53,39 @@ class ProjectAdmin(admin.ModelAdmin):
     )
 
     actions = ['sync_github_stats']
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('<path:object_id>/ai-magic-fill/', self.admin_site.admin_view(self.ai_magic_fill_view), name='projects-ai-magic-fill'),
+        ]
+        return custom_urls + urls
+
+    def ai_magic_fill_view(self, request, object_id):
+        project = self.get_object(request, object_id)
+        if not project:
+            self.message_user(request, "Project not found.", level='error')
+            return HttpResponseRedirect("../../")
+            
+        if not project.github:
+            self.message_user(request, "GitHub URL is required for AI Magic Fill. Please add it and save first.", level='error')
+        else:
+            data, error_msg = ai_magic_fill(project.github)
+            if data:
+                project.overview = data.get('overview', project.overview)
+                project.tech_stack = data.get('tech_stack', project.tech_stack)
+                project.key_features = data.get('key_features', project.key_features)
+                project.category = data.get('category', project.category)
+                project.role = data.get('role', project.role)
+                project.lighthouse_performance = data.get('lighthouse_performance', project.lighthouse_performance)
+                project.lighthouse_seo = data.get('lighthouse_seo', project.lighthouse_seo)
+                project.lighthouse_accessibility = data.get('lighthouse_accessibility', project.lighthouse_accessibility)
+                project.save()
+                self.message_user(request, f"✨ AI Magic Fill successful for '{project.title}'! All fields have been updated based on the repository content.")
+            else:
+                self.message_user(request, f"AI Magic Fill failed: {error_msg}", level='error')
+        
+        return HttpResponseRedirect("../change/")
 
     @admin.action(description='🔄 Sync selected projects with GitHub')
     def sync_github_stats(self, request, queryset):
