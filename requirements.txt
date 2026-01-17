@@ -118,8 +118,6 @@ idna==3.10
     #   backend
     #   httpx
     #   requests
-imagekitio==4.2.0
-    # via backend
 inflection==0.5.1
     # via
     #   backend
@@ -182,12 +180,9 @@ requests==2.32.4
     # via
     #   backend
     #   google-api-core
-    #   imagekitio
     #   requests-toolbelt
 requests-toolbelt==1.0.0
-    # via
-    #   backend
-    #   imagekitio
+    # via backend
 rsa==4.9.1
     # via
     #   backend
@@ -227,7 +222,6 @@ uritemplate==4.2.0
 urllib3==2.5.0
     # via
     #   backend
-    #   imagekitio
     #   requests
 waitress==3.0.2
     # via backend

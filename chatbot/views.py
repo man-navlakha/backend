@@ -17,17 +17,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import requests 
-from imagekitio import ImageKit
 
-try:
-    imagekit = ImageKit(
-        private_key=os.getenv('IMAGEKIT_PRIVATE_KEY'),
-        public_key=os.getenv('IMAGEKIT_PUBLIC_KEY'),
-        url_endpoint=os.getenv('IMAGEKIT_URL_ENDPOINT')
-    )
-except Exception as e:
-    print(f"ImageKit initialization failed: {e}")
-    imagekit = None
 
 from .utils import markdown_to_whatsapp, send_hiring_notifications, send_contact_notifications, get_latest_github_activity
 
@@ -320,75 +310,3 @@ def submit_contact_request(request):
 # --- 2. THE COMPLETE VIEW FUNCTION ---
 # You can add this function alongside your other views like chatbot_reply.
 # --------------------------------------------------------------------------
-@api_view(['POST'])
-@csrf_exempt
-def generate_sticker_image(request):
-    """
-    Generates an image based on a prompt using the Gemini API, 
-    uploads it to ImageKit, and returns the public URL.
-    """
-    if not imagekit:
-        return Response({"error": "Image hosting service is not configured."}, status=500)
-    
-    # Check if the main Gemini model is configured from your existing setup
-    if not model:
-        return Response({"error": "Gemini API is not configured."}, status=500)
-
-    prompt_text = request.data.get('prompt', 'a friendly robot waving')
-    # Add style hints to the prompt for a "sticker" look
-    final_prompt = f"a cute sticker of {prompt_text}, vector art, simple illustration, white background, high quality"
-    
-    print(f"Received request to generate sticker with Gemini, prompt: '{final_prompt}'")
-
-    try:
-        # ======================================================================
-        # == PART 1: GEMINI IMAGE GENERATION API CALL                         ==
-        # ======================================================================
-        
-        # Initialize the specific Gemini model for image generation
-        # NOTE: Using the 2.0 model which supports multimodal tasks.
-        # Using gemini-flash-latest for image tasks
-        image_model = genai.GenerativeModel('gemini-flash-latest')
-
-        # Generate the image content
-        response = image_model.generate_content(final_prompt)
-        
-        # The image data is returned in the 'parts' of the first candidate.
-        # We need to access the raw binary data from the response.
-        image_data_bytes = response.candidates[0].content.parts[0].inline_data.data
-        
-        if not image_data_bytes:
-             raise Exception("Image generation failed: No image data returned from Gemini API.")
-        
-        # ======================================================================
-        # == PART 2: UPLOAD THE IMAGE TO IMAGEKIT.IO (This part is unchanged) ==
-        # ======================================================================
-        unique_filename = f"sticker_{uuid.uuid4().hex}.png"
-        print(f"Uploading to ImageKit as '{unique_filename}'...")
-
-        upload_response_obj = imagekit.upload(
-            file=image_data_bytes,
-            file_name=unique_filename,
-            options={
-                "folder": "/portfolio-chatbot-stickers/",
-                "is_private_file": False,
-            }
-        )
-        
-        response_metadata = upload_response_obj.get("response", {})
-        image_url = response_metadata.get("url")
-        
-        if not image_url:
-            print(f"ImageKit upload failed. Full response: {response_metadata}")
-            raise Exception("ImageKit upload failed: URL not found in response.")
-
-        print(f"Upload successful. URL: {image_url}")
-        
-        # ======================================================================
-        # == PART 3: RETURN THE PUBLIC URL (This part is unchanged)           ==
-        # ======================================================================
-        return JsonResponse({"imageUrl": image_url})
-
-    except Exception as e:
-        print(f"An error occurred in generate_sticker_image: {traceback.format_exc()}")
-        return Response({"error": str(e)}, status=500)

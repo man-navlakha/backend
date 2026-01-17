@@ -7,8 +7,6 @@ import logging
 logger = logging.getLogger(__name__)
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .utils import update_all_project_stats
-
 class ProjectViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
@@ -19,9 +17,3 @@ class ProjectViewSet(viewsets.ModelViewSet):
         Project.objects.filter(pk=pk).update(views=F('views') + 1)
         project = self.get_object()
         return Response({"message": f"Views for {project.title} incremented to {project.views}."})
-
-    @action(detail=False, methods=['post'])
-    def sync_github(self, request):
-        """Triggers manual sync with GitHub API."""
-        count = update_all_project_stats()
-        return Response({"message": f"Successfully synced {count} projects from GitHub."})

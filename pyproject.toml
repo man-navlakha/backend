@@ -34,7 +34,6 @@ dependencies = [
     "httplib2==0.22.0",
     "httpx==0.28.1",
     "idna==3.10",
-    "imagekitio==4.2.0",
     "inflection==0.5.1",
     "jiter==0.10.0",
     "packaging==25.0",
