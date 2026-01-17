@@ -104,10 +104,11 @@ def sync_experience(content):
         responsibilities = re.findall(r'-\s+(.*?)(?:\n|$)', details)
         
         exp, created = Experience.objects.update_or_create(
-            company_name=company_name,
+            company=company_name,
             role=role,
             defaults={
                 'location': location,
+                'period': dates_str, # Store the full period string
                 'start_date': start_date,
                 'end_date': end_date,
                 'responsibilities': responsibilities,

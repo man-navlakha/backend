@@ -82,16 +82,19 @@ def load_portfolio_data():
         experience_stats = "\n### LIVE PROFESSIONAL EXPERIENCE (FROM DATABASE)\n"
         for exp in db_experiences:
             resp_str = "\n    - ".join(exp.responsibilities) if exp.responsibilities else "N/A"
-            tech_str = ", ".join(exp.tech_stack) if exp.tech_stack else "N/A"
-            duration = f"{exp.start_date} - {exp.end_date or ('Present' if exp.is_current else 'N/A')}"
+            tech_str = ", ".join(exp.technologies) if exp.technologies else "N/A"
+            achieve_str = "\n    - ".join(exp.achievements) if exp.achievements else "N/A"
+            duration = exp.period or f"{exp.start_date} - {exp.end_date or ('Present' if exp.is_current else 'N/A')}"
             
             experience_stats += f"""
-* **{exp.role} at {exp.company_name}**
+* **{exp.role} at {exp.company}**
   - Duration: {duration}
   - Location: {exp.location or 'N/A'}
   - Tech Stack: {tech_str}
   - Key Responsibilities:
     - {resp_str}
+  - Key Achievements:
+    - {achieve_str}
 """
         
         return f"{markdown_content}\n{project_stats}\n{experience_stats}"
